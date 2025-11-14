@@ -5,6 +5,6 @@ go 1.24
 toolchain go1.24.5
 
 require (
-	github.com/mattn/go-colorable v0.1.16
+	github.com/mattn/go-colorable v0.1.14
 )
 
