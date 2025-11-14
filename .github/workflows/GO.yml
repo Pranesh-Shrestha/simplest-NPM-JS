@@ -34,12 +34,15 @@ jobs:
            # ${{ runner.os }}-go-
 
       # 4. Generate go.sum if missing and download dependencies
-      - name: Download Go modules and generate go.sum
-        run: |
-          if [ ! -f go.sum ]; then
-            echo "go.sum missing, running go mod tidy..."
-          fi
-          go mod tidy
+    #  - name: Download Go modules and generate go.sum
+  #      run: |
+     #     if [ ! -f go.sum ]; then
+     #       echo "go.sum missing, running go mod tidy..."
+      #    fi
+      #    go mod tidy
+
+      - name: Install dependencies
+        run: go mod tidy
 
       - name: Build project
         run: go build ./...
