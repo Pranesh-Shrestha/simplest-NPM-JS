@@ -1,0 +1,46 @@
+name: PyPi
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup PSE
+        uses: invisirisk/pse-action@latest
+        with:
+          api_url: "https://app.invisirisk.com"
+          app_token: ${{secrets.IR_API_KEY_PYPI}}
+          
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"       # <-- built-in caching
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Cleanup PSE
+        if: always()
+        uses: invisirisk/pse-action@latest
+        with:
+          cleanup: "true"
+
+  gather_analytics:
+    runs-on: ubuntu-latest
+    name: Gather Analytics
+    needs: build
+    if: always()
+    steps:
+      - name: Gather Status
+        uses: invisirisk/pse-action@latest
+        with:
+          api_url: "https://app.invisirisk.com"
+          app_token: ${{secrets.IR_API_KEY_PYPI}}
+          send_job_status: "true"
+          debug: "true"
