@@ -1,0 +1,74 @@
+name: NPM Cache Verification
+
+on: workflow_dispatch
+
+jobs:
+  test-npm-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node with npm caching
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Show restored cache details
+        run: |
+          echo "Cache key used: ${{ steps.setup-node.outputs.cache-hit }}"
+          echo "npm cache dir: $(npm config get cache)"
+          echo "Listing ~/.npm/_cacache:"
+          ls -R ~/.npm/_cacache || true
+
+      # ----------------------------------------------------------------------
+      # 1. TEST INSTALL WITH NETWORK BLOCKED (PROOF OF CACHE WORKING)
+      # ----------------------------------------------------------------------
+
+      - name: Block all outbound internet
+        run: |
+          echo "Blocking outbound internet..."
+          sudo iptables -A OUTPUT -p tcp --dport 443 -j DROP
+          sudo iptables -A OUTPUT -p tcp --dport 80 -j DROP
+
+      - name: Start timer (cache)
+        run: date +%s > start_time_cache.txt
+
+      - name: Install dependencies (verbose, cached)
+        run: npm install --verbose
+
+      - name: End timer (cache)
+        run: |
+          END=$(date +%s)
+          START=$(cat start_time_cache.txt)
+          echo "Install time WITH cache (network blocked): $((END-START)) seconds"
+
+      # ----------------------------------------------------------------------
+      # 2. FORCE CACHE MISS (COMPARE SPEED)
+      # ----------------------------------------------------------------------
+
+      - name: Clear node_modules and npm cache dir
+        run: |
+          rm -rf node_modules
+          rm -rf ~/.npm
+          echo "Cleared existing cache."
+
+      - name: Unblock internet for non-cached install
+        run: |
+          sudo iptables -F OUTPUT
+          echo "Internet restored."
+
+      - name: Start timer (no cache)
+        run: date +%s > start_time_nocache.txt
+
+      - name: Install dependencies (no cache, verbose)
+        run: npm install --verbose
+
+      - name: End timer (no cache)
+        run: |
+          END=$(date +%s)
+          START=$(cat start_time_nocache.txt)
+          echo "Install time WITHOUT cache (internet used): $((END-START)) seconds"
